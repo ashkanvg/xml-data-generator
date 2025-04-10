@@ -5,25 +5,25 @@
 #include <vector>
 #include <string>
 #include <random>
+#include <filesystem>  
 #include <ctime>
 
 using namespace std::chrono;
 using namespace std;
 
 struct XMLGeneratorConfig {
-    int size;                                   // Maximum size of the XML document             
-    std::vector<std::string> validKeys;         // List of valid keys for XML elements
-    std::vector<std::string> validValues;       // List of valid values for XML elements
-    std::vector<std::string> validAttributes;   // List of valid attributes for XML elements
-    int maxDepth;                               // Maximum depth of the XML tree
-    int maxKeySize;                             // Maximum size of keys
-    int maxValueSize;                           // Maximum size of values
-    int maxAttrSize;                            // Maximum size of attributes
-    int maxAttributesPerElement;                // Maximum number of attributes per element
-    bool allowRepeatedKeys;                     // Allow repeated keys
-    bool allowSelfClosing;                      // Allow self-closing tags      
-    bool includeAttributes;                     // Include attributes in elements
-    bool useEscapedChars;                       // Use escaped characters in values
+    long long size;
+    std::vector<std::string> validKeys;
+    std::vector<std::string> validValues;
+    int maxDepth;
+    int maxKeySize;
+    int maxValueSize;
+    int maxAttrSize;
+    bool allowRepeatedKeys;
+    bool allowSelfClosing;
+    bool includeAttributes;
+    int maxAttributesPerElement;
+    bool useEscapedChars;
 };
 
 class XMLGenerator {
@@ -35,7 +35,7 @@ public:
     void generate(pugi::xml_node& parent, int currentDepth = 0) {
         if (currentSize >= config.size || currentDepth > config.maxDepth) return;
 
-        int childrenCount = std::min(3, config.size - currentSize);
+        int childrenCount = std::min(3LL, config.size - currentSize);
         for (int i = 0; i < childrenCount; ++i) {
             std::string key = randomKey();
             pugi::xml_node node;
@@ -64,15 +64,25 @@ public:
 
 private:
     XMLGeneratorConfig config;
-    int currentSize = 0;
+    long long currentSize = 0;
     std::mt19937 rng;
 
     std::string randomKey() {
         return truncate(randomFrom(config.validKeys), config.maxKeySize);
     }
 
+    std::string inflate(const std::string& base, size_t minSize) {
+        std::string result = base;
+        while (result.size() < minSize) {
+            result += base;
+        }
+        return result.substr(0, minSize);
+    }
+    
+
     std::string randomValue() {
         std::string val = truncate(randomFrom(config.validValues), config.maxValueSize);
+        val = inflate(val, config.maxValueSize); // Inflate here
         if (config.useEscapedChars) {
             replaceAll(val, "&", "&amp;");
             replaceAll(val, "<", "&lt;");
@@ -113,15 +123,37 @@ private:
 
 int main() {
     XMLGeneratorConfig cfg;
-    cfg.size = 100;
-    cfg.validKeys = {"item", "data", "entry", "book", "author", "title", "price", "description", "category", "tag", "university", "department", "course", "student", "professor", "class", "subject", "grade", "year", "semester"};
-    cfg.validValues = {"value1", "value2", "sample<text>", "value&special", "example\"text", "another'example", "text with spaces", "text with <tags>", "text with & special chars"};
-    cfg.maxDepth = 5;
-    cfg.maxKeySize = 10;
-    cfg.maxValueSize = 15;
-    cfg.maxAttrSize = 10;
+    cfg.size = 80000000;
+    cfg.validKeys = {"item", "data", "entry", "book", "author", "title", "price", "description", "category", 
+        "tag", "university", "department", "course", "student", "professor", "class", "subject", "grade", "year", 
+        "semester", "assignment", "project", "lab", "experiment", "research", "publication", "conference", "journal",
+        "article", "paper", "thesis", "dissertation", "report", "presentation", "lecture", "tutorial", "workshop",
+        "seminar", "meeting", "discussion", "forum", "chat", "message", "email", "notification", "alert", "reminder",
+        "task", "to-do", "calendar", "event", "schedule", "timeline", "milestone", "goal", "objective", "target",
+        "achievement", "success", "failure", "error", "bug", "issue", "problem", "solution", "fix", "update", "upgrade",
+        "patch", "version", "release", "build", "deployment", "installation", "configuration", "setup", "environment",
+        "system", "network", "server", "client", "database", "table", "row", "column", "field", "record", "entry",
+        "key", "value", "pair", "mapping", "relation", "link", "connection", "association", "reference", "pointer",
+        "handle", "identifier", "name", "label", "tag", "marker", "flag", "sign", "symbol", "icon", "image", "picture",
+        "photo", "graphic", "illustration", "drawing", "sketch", "design", "layout", "template", "format", "style"};
+    cfg.validValues = {"value1", "value2", "sample<text>", "value&special", "example\"text", "another'example", "text with spaces", 
+        "text with <tags>", "text with & special chars", "text with \"quotes\"", "text with 'single quotes'", "text with < and >",
+        "text with & and \"", "text with ' and &", "text with < and '", "text with > and \"", "text with < and &", "text with ' and >",
+        "text with \" and <", "text with ' and <", "text with \" and >", "text with ' and >", "text with < and \"", "text with > and '",
+        "Jack", "Jill", "John", "Jane", "Doe", "Smith", "Brown", "Davis", "Miller", "Wilson", "Moore", "Taylor", "Anderson", "Thomas",
+        "Jackson", "White", "Harris", "Martin", "Thompson", "Garcia", "Martinez", "Robinson", "Clark", "Rodriguez", "Lewis", "Lee",
+        "Walker", "Hall", "Allen", "Young", "Hernandez", "King", "Wright", "Lopez", "Hill", "Scott", "Green", "Adams", "Baker",
+        "Gonzalez", "Nelson", "Carter", "Mitchell", "Perez", "Roberts", "Turner", "Phillips", "Campbell", "Parker", "Evans", "Edwards",
+        "Collins", "Stewart", "Sanchez", "Morris", "Rogers", "Reed", "Cook", "Morgan", "Bell", "Murphy", "Bailey", "Rivera", "Cooper",
+        "Richardson", "Cox", "Howard", "Ward", "Torres", "Peterson", "Gray", "Ramirez", "James", "Watson", "Brooks", "Kelly", "Sanders",
+        "Price", "Bennett", "Wood", "Barnes", "Ross", "Henderson", "Coleman", "Jenkins", "Perry", "Powell", "Long", "Patterson", "Hughes",
+        "Flores", "Washington", "Butler", "Simmons", "Foster", "Gonzales", "Bryant", "Alexander", "Russell", "Griffin", "Diaz", "Hayes"};
+    cfg.maxDepth = 3;
+    cfg.maxKeySize = 8;
+    cfg.maxValueSize = 2000;
+    cfg.maxAttrSize = 512;
     cfg.allowRepeatedKeys = true;
-    cfg.allowSelfClosing = true;
+    cfg.allowSelfClosing = false;
     cfg.includeAttributes = true;
     cfg.maxAttributesPerElement = 2;
     cfg.useEscapedChars = true;
@@ -135,5 +167,9 @@ int main() {
     doc.save_file("output.xml");
 
     std::cout << "XML generated and saved to output.xml" << std::endl;
+    // After doc.save_file("output.xml");
+    std::cout << "File size: " 
+    << std::filesystem::file_size("output.xml") / (1024 * 1024) 
+    << " MB" << std::endl;
     return 0;
 }
