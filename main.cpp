@@ -35,7 +35,7 @@ public:
     void generate(pugi::xml_node& parent, int currentDepth = 0) {
         if (currentSize >= config.size || currentDepth > config.maxDepth) return;
 
-        int childrenCount = std::min(3LL, config.size - currentSize);
+        int childrenCount = std::min(30LL, config.size - currentSize);
         for (int i = 0; i < childrenCount; ++i) {
             std::string key = randomKey();
             pugi::xml_node node;
@@ -150,8 +150,8 @@ int main() {
         "Flores", "Washington", "Butler", "Simmons", "Foster", "Gonzales", "Bryant", "Alexander", "Russell", "Griffin", "Diaz", "Hayes"};
     cfg.maxDepth = 3;
     cfg.maxKeySize = 8;
-    cfg.maxValueSize = 2000;
-    cfg.maxAttrSize = 512;
+    cfg.maxValueSize = 1024;
+    cfg.maxAttrSize = 1;
     cfg.allowRepeatedKeys = true;
     cfg.allowSelfClosing = false;
     cfg.includeAttributes = true;
